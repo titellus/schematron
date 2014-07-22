@@ -155,7 +155,7 @@ VERSION INFORMATION
 		<xslt:comment>Start pattern based on abstract <xslt:value-of select="@is-a"/></xslt:comment>
 		
 		<xslt:call-template name="iae:abstract-to-real" >
-			<xslt:with-param name="caller" select="@id" />
+			<xslt:with-param name="caller" select="." />
 			<xslt:with-param name="is-a" select="@is-a" />
 		</xslt:call-template>
 			
@@ -192,10 +192,8 @@ VERSION INFORMATION
 		<xslt:param name="text" />
 		<xslt:param name="paramNumber" />
 
-		
-		<xslt:choose>
-			<xslt:when test="//iso:pattern[@id=$caller]/iso:param[ $paramNumber]">
-
+	  <xslt:choose>
+			<xslt:when test="$caller/iso:param[ $paramNumber]">
 				<xslt:call-template name="iae:multi-macro-expand">
 					<xslt:with-param name="caller" select="$caller"/>	
 					<xslt:with-param name="paramNumber" select="$paramNumber + 1"/>		
@@ -203,9 +201,9 @@ VERSION INFORMATION
 						<xslt:call-template name="iae:replace-substring">
 							<xslt:with-param name="original" select="$text"/>
 							<xslt:with-param name="substring"
-							select="concat('$', //iso:pattern[@id=$caller]/iso:param[ $paramNumber ]/@name)"/>
+							  select="concat('$', $caller/iso:param[ $paramNumber ]/@name)"/>
 							<xslt:with-param name="replacement"
-								select="//iso:pattern[@id=$caller]/iso:param[ $paramNumber ]/@value"/>			
+							  select="$caller/iso:param[ $paramNumber ]/@value"/>			
 						</xslt:call-template>
 					</xslt:with-param>						
 				</xslt:call-template>
@@ -224,16 +222,16 @@ VERSION INFORMATION
 		<xslt:copy>
 		
 		    <xslt:choose>
-		      <xslt:when test=" string-length( $caller ) = 0">
-		      <xslt:attribute name="id"><xslt:value-of select="concat( generate-id(.) , $is-a)" /></xslt:attribute>
+		      <xslt:when test=" string-length( $caller/@id ) = 0">
+		        <xslt:attribute name="id"><xslt:value-of select="concat( generate-id($caller) , $is-a)" /></xslt:attribute>
 		      </xslt:when>
 		      <xslt:otherwise>
-				<xslt:attribute name="id"><xslt:value-of select="$caller" /></xslt:attribute>
+		        <xslt:attribute name="id"><xslt:value-of select="$caller/@id" /></xslt:attribute>
 		      </xslt:otherwise>
 		    </xslt:choose> 
 			
 			<xslt:apply-templates select="*|text()" mode="iae:do-pattern"    >
-				<xslt:with-param name="caller"><xslt:value-of select="$caller"/></xslt:with-param>
+				<xslt:with-param name="caller" select="$caller"/>
 			</xslt:apply-templates>	
 			
 		</xslt:copy>
@@ -244,16 +242,17 @@ VERSION INFORMATION
 	<!-- Generate a non-abstract pattern -->
 	<xslt:template mode="iae:do-pattern" match="*">
 		<xslt:param name="caller"/>
-		<xslt:copy>
-			<xslt:for-each select="@*[name()='test' or name()='context' or name()='select'   or name()='path'  ]">
+	  
+	  <xslt:copy>
+		  <xslt:for-each select="@*[name()='test' or name()='context' or name()='select'   or name()='path'  or name()='value']">
 				<xslt:attribute name="{name()}">
 				<xslt:call-template name="iae:macro-expand">
 						<xslt:with-param name="text"><xslt:value-of select="."/></xslt:with-param>
-						<xslt:with-param name="caller"><xslt:value-of select="$caller"/></xslt:with-param>
+						<xslt:with-param name="caller" select="$caller"/>
 					</xslt:call-template>
 				</xslt:attribute>
 			</xslt:for-each>	
-			<xslt:copy-of select="@*[name()!='test'][name()!='context'][name()!='select'][name()!='path']" />
+		  <xslt:copy-of select="@*[name()!='test'][name()!='context'][name()!='select'][name()!='path'][name()!='value']" />
 			<xsl:for-each select="node()">
 				<xsl:choose>
 				    <!-- Experiment: replace macros in text as well, to allow parameterized assertions
@@ -262,13 +261,13 @@ VERSION INFORMATION
                 NOTE: THIS FUNCTIONALITY WILL BE REMOVED IN THE FUTURE    -->
 					<xsl:when test="self::text()">	
 						<xslt:call-template name="iae:macro-expand">
-							<xslt:with-param name="text"><xslt:value-of select="."/></xslt:with-param>
-							<xslt:with-param name="caller"><xslt:value-of select="$caller"/></xslt:with-param>
+						  <xslt:with-param name="text"><xslt:value-of select="."/></xslt:with-param>
+						  <xslt:with-param name="caller" select="$caller"/>
 						</xslt:call-template>
 					</xsl:when>
 					<xsl:otherwise>
-						<xslt:apply-templates select="." mode="iae:do-pattern">
-							<xslt:with-param name="caller"><xslt:value-of select="$caller"/></xslt:with-param>
+					  <xslt:apply-templates select="." mode="iae:do-pattern">
+					    <xslt:with-param name="caller" select="$caller"/>
 						</xslt:apply-templates>		
 					</xsl:otherwise>
 				</xsl:choose>
